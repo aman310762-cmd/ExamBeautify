@@ -93,7 +93,7 @@ export interface ThemeDefinition {
 
 // --- Pipeline & Processing Types ---
 
-export type PipelineStep = 'upload' | 'extract' | 'layout' | 'qa' | 'pdf';
+export type PipelineStep = 'upload' | 'extract' | 'principal-review' | 'layout' | 'qa' | 'pdf';
 
 export type StepStatus = 'pending' | 'active' | 'complete' | 'error' | 'skipped';
 
@@ -121,6 +121,39 @@ export interface QAReport {
   issues: QAIssue[];
   correctionPrompt?: string;
   timestamp: string;
+}
+
+// --- Principal Review Agent Types ---
+
+export interface PrincipalReviewIssue {
+  questionNumber: number | null;
+  field: 'text' | 'marks' | 'options' | 'latex' | 'diagram' | 'section' | 'metadata' | 'missing' | 'extra';
+  severity: 'critical' | 'warning' | 'info';
+  description: string;
+  correction: string;
+}
+
+export interface PrincipalReviewReport {
+  approved: boolean;
+  score: number;           // 0-100 accuracy
+  totalIssues: number;
+  criticalIssues: number;
+  issues: PrincipalReviewIssue[];
+  summary: string;
+  timestamp: string;
+}
+
+export interface PrincipalReviewRequest {
+  sourceFileBase64: string;
+  sourceMimeType: string;
+  extractedData: ExamDocument;
+}
+
+export interface PrincipalReviewResponse {
+  success: boolean;
+  correctedData?: ExamDocument;
+  report?: PrincipalReviewReport;
+  error?: string;
 }
 
 // --- Upload Types ---
