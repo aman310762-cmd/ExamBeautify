@@ -150,7 +150,7 @@ export async function POST(
     // On error, pass through original data (graceful degradation)
     return NextResponse.json({
       success: true,
-      correctedData: extractedData,
+      correctedData: extractedData ?? undefined,
       report: {
         approved: true,
         score: 70,

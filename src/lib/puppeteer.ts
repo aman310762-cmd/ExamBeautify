@@ -1,30 +1,54 @@
 // ============================================================
 // ExamBeautify — Puppeteer Browser Launcher Utility
+// Works on both local (puppeteer) and Vercel (@sparticuz/chromium)
 // ============================================================
 
-import puppeteer, { Browser, Page } from 'puppeteer';
+import type { Browser, Page } from 'puppeteer';
 
 let browserInstance: Browser | null = null;
 
 /**
+ * Detect if running on Vercel (serverless).
+ */
+function isVercel(): boolean {
+  return !!process.env.VERCEL || !!process.env.AWS_LAMBDA_FUNCTION_NAME;
+}
+
+/**
  * Get or create a shared Puppeteer browser instance.
- * Uses a singleton pattern to reuse the browser across requests.
+ * Uses @sparticuz/chromium on Vercel, regular puppeteer locally.
  */
 export async function getBrowser(): Promise<Browser> {
   if (browserInstance && browserInstance.connected) {
     return browserInstance;
   }
 
-  browserInstance = await puppeteer.launch({
-    headless: true,
-    args: [
-      '--no-sandbox',
-      '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage',
-      '--disable-gpu',
-      '--font-render-hinting=none',
-    ],
-  });
+  if (isVercel()) {
+    // Serverless: use @sparticuz/chromium + puppeteer-core
+    const chromium = (await import('@sparticuz/chromium')).default;
+    const puppeteerCore = (await import('puppeteer-core')).default;
+
+    browserInstance = await puppeteerCore.launch({
+      args: chromium.args,
+      defaultViewport: { width: 794, height: 1123 },
+      executablePath: await chromium.executablePath(),
+      headless: true,
+    }) as unknown as Browser;
+  } else {
+    // Local: use full puppeteer with bundled Chromium
+    const puppeteer = (await import('puppeteer')).default;
+
+    browserInstance = await puppeteer.launch({
+      headless: true,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--font-render-hinting=none',
+      ],
+    });
+  }
 
   return browserInstance;
 }
@@ -82,6 +106,10 @@ export async function renderHtmlToPdf(html: string): Promise<Buffer> {
     return Buffer.from(pdfBuffer);
   } finally {
     await page.close();
+    // On Vercel, close browser after each request to free resources
+    if (isVercel()) {
+      await closeBrowser();
+    }
   }
 }
 
@@ -116,6 +144,9 @@ export async function renderHtmlToScreenshot(html: string): Promise<Buffer> {
     return Buffer.from(screenshot);
   } finally {
     await page.close();
+    if (isVercel()) {
+      await closeBrowser();
+    }
   }
 }
 
@@ -159,6 +190,9 @@ export async function pdfToImages(pdfBase64: string): Promise<string[]> {
     console.warn('[Puppeteer] PDF to image conversion failed:', err);
   } finally {
     await page.close();
+    if (isVercel()) {
+      await closeBrowser();
+    }
   }
 
   return images;
