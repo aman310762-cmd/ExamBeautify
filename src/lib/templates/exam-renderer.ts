@@ -96,20 +96,13 @@ function renderInstructions(exam: ExamDocument): string {
 }
 
 function renderSection(section: string, questions: QuestionContent[], config: StyleConfig): string {
-  const sectionNames: Record<string, string> = {
-    'A': 'Section A',
-    'B': 'Section B',
-    'C': 'Section C',
-    'D': 'Section D',
-    'E': 'Section E',
-    'General': '',
-  };
-
+  // Use the exact section name from the paper
+  // Only hide if section is 'General' (no section specified)
+  const isGeneral = section === 'General';
   const sectionMarks = questions.reduce((sum, q) => sum + (q.marks || 0), 0);
-  const sectionName = sectionNames[section] || `Section ${section}`;
 
-  const sectionHeader = sectionName
-    ? `<div class="section-header">${sectionName}${sectionMarks > 0 ? ` (${sectionMarks} Marks)` : ''}</div>`
+  const sectionHeader = !isGeneral
+    ? `<div class="section-header">${escapeHtml(section)}${sectionMarks > 0 ? ` (${sectionMarks} Marks)` : ''}</div>`
     : '';
 
   return `

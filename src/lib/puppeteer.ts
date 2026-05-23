@@ -8,23 +8,24 @@ import type { Browser, Page } from 'puppeteer';
 let browserInstance: Browser | null = null;
 
 /**
- * Detect if running on Vercel (serverless).
+ * Detect if running on Vercel (serverless) or AWS Lambda.
  */
-function isVercel(): boolean {
+function isServerless(): boolean {
   return !!process.env.VERCEL || !!process.env.AWS_LAMBDA_FUNCTION_NAME;
 }
 
 /**
  * Get or create a shared Puppeteer browser instance.
- * Uses @sparticuz/chromium on Vercel, regular puppeteer locally.
+ * - Vercel: uses @sparticuz/chromium + puppeteer-core
+ * - Render/Local: uses regular puppeteer with bundled Chromium
  */
 export async function getBrowser(): Promise<Browser> {
   if (browserInstance && browserInstance.connected) {
     return browserInstance;
   }
 
-  if (isVercel()) {
-    // Serverless: use @sparticuz/chromium + puppeteer-core
+  if (isServerless()) {
+    // Serverless (Vercel): use @sparticuz/chromium + puppeteer-core
     const chromium = (await import('@sparticuz/chromium')).default;
     const puppeteerCore = (await import('puppeteer-core')).default;
 
@@ -35,7 +36,7 @@ export async function getBrowser(): Promise<Browser> {
       headless: true,
     }) as unknown as Browser;
   } else {
-    // Local: use full puppeteer with bundled Chromium
+    // Local or Render: use full puppeteer with bundled Chromium
     const puppeteer = (await import('puppeteer')).default;
 
     browserInstance = await puppeteer.launch({
@@ -46,6 +47,7 @@ export async function getBrowser(): Promise<Browser> {
         '--disable-dev-shm-usage',
         '--disable-gpu',
         '--font-render-hinting=none',
+        '--single-process',       // Render free tier needs this
       ],
     });
   }
@@ -107,7 +109,7 @@ export async function renderHtmlToPdf(html: string): Promise<Buffer> {
   } finally {
     await page.close();
     // On Vercel, close browser after each request to free resources
-    if (isVercel()) {
+    if (isServerless()) {
       await closeBrowser();
     }
   }
@@ -144,7 +146,7 @@ export async function renderHtmlToScreenshot(html: string): Promise<Buffer> {
     return Buffer.from(screenshot);
   } finally {
     await page.close();
-    if (isVercel()) {
+    if (isServerless()) {
       await closeBrowser();
     }
   }
@@ -190,7 +192,7 @@ export async function pdfToImages(pdfBase64: string): Promise<string[]> {
     console.warn('[Puppeteer] PDF to image conversion failed:', err);
   } finally {
     await page.close();
-    if (isVercel()) {
+    if (isServerless()) {
       await closeBrowser();
     }
   }

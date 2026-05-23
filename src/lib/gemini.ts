@@ -158,13 +158,20 @@ CRITICAL RULES:
 1. Extract EVERY question exactly as written — do not fix grammar, spelling, or formatting.
 2. For mathematical expressions, convert them into standard LaTeX notation. Use proper LaTeX commands (e.g., \\frac{}{}, \\sqrt{}, \\int, \\sum, \\times, \\div, \\leq, \\geq, \\alpha, \\beta, \\theta, \\pi).
 3. For Hindi/Devanagari text, preserve it exactly. Set language to "bilingual" if both Hindi and English are present.
-4. For diagrams, charts, or figures: set hasDiagram to true and write a detailed description in diagramDescription.
+4. DIAGRAMS — VERY IMPORTANT:
+   - Set hasDiagram to true ONLY for scientific/geometric/technical diagrams (circuits, triangles, graphs, lens diagrams, ray diagrams, geometric constructions, chemical structures).
+   - DO NOT set hasDiagram for photos, pictures, illustrations, cartoons, story panels, classroom scenes, or decorative images. For these, describe them in the question text itself (e.g., "[Picture: cartoon of rabbit and tortoise race]").
+   - For real diagrams, write a PRECISE scientific description in diagramDescription (e.g., "A right triangle ABC with angle B = 90°, AB = 3cm, BC = 4cm").
 5. Identify question types: MCQ, Short, Long, Numerical, TrueFalse, FillBlank, Diagram.
 6. Extract section headers, instructions, and metadata (subject, total marks, time, class, school name).
 7. Process ALL pages of the document — do not skip any content.
 8. For MCQ questions, extract ALL options into the "options" array.
 9. If questions have sub-parts like (a), (b), (c) or (i), (ii), (iii), put them in "subParts" array.
-10. Set appropriate section values (A, B, C, D, etc.) based on the paper structure.
+10. QUESTION NUMBERING — VERY IMPORTANT:
+    - Use the ORIGINAL question number as printed in the paper. Do NOT create your own sequential numbering.
+    - If a section has questions numbered 1-10, use those numbers (1, 2, 3...), NOT a global counter (41, 42, 43...).
+    - If the paper uses "Creative Writing -1", "Creative Writing -2", use those original numbers (1, 2, 3...).
+11. SECTIONS — Use the EXACT section name from the paper (e.g., "COMPETENCY 3- CREATIVE WRITING", "Section A", "Reading Comprehension", "Grammar"). Do NOT shorten to just "A", "B", "C" unless that's what the paper actually says.
 
 OUTPUT FORMAT (strict JSON, no markdown fences):
 {
@@ -188,8 +195,8 @@ OUTPUT FORMAT (strict JSON, no markdown fences):
       "latexEquations": ["LaTeX strings found in the question"],
       "options": ["option strings - for MCQ only"],
       "hasDiagram": true/false,
-      "diagramDescription": "detailed description if hasDiagram is true, else null",
-      "section": "A or B or C or D or General",
+      "diagramDescription": "detailed SCIENTIFIC description if hasDiagram is true, else null",
+      "section": "EXACT section name from the paper",
       "language": "en or hi or bilingual",
       "hindiText": "Hindi version if bilingual, else null",
       "subParts": [{"label": "(a)", "text": "sub part text", "marks": 1, "hasMath": false, "latexEquations": []}]

@@ -16,6 +16,27 @@ export function generateSvgFromDescription(
   // Analyze the description to determine diagram type
   const lowerDesc = description.toLowerCase();
 
+  // GUARD: If the description is about non-scientific content (photos, pictures, 
+  // cartoons, stories, illustrations), show a clean text placeholder — NOT a physics diagram
+  const nonScienceKeywords = [
+    'picture', 'photo', 'cartoon', 'illustration', 'story', 'panel',
+    'classroom', 'scene', 'animal', 'rabbit', 'tortoise', 'hare',
+    'children', 'student', 'teacher', 'school', 'house', 'tree',
+    'flower', 'garden', 'family', 'person', 'people', 'boy', 'girl',
+    'man', 'woman', 'cat', 'dog', 'bird', 'fish', 'writing',
+    'observe the given', 'describe the', 'look at the', 'series of',
+    'black and white', 'color', 'drawing', 'sketch', 'painting',
+    'poster', 'notice', 'advertisement', 'letter', 'diary', 'essay',
+    'comprehension', 'passage', 'read the', 'paragraph',
+    'start', 'finish', 'race', 'running', 'sleeping', 'eating',
+    'playing', 'sitting', 'standing', 'walking',
+  ];
+
+  const isNonScience = nonScienceKeywords.some(kw => lowerDesc.includes(kw));
+  if (isNonScience) {
+    return generatePlaceholderSvg(description, width, height);
+  }
+
   if (lowerDesc.includes('triangle') || lowerDesc.includes('vertices')) {
     return generateTriangleSvg(description, width, height);
   }
