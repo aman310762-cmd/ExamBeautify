@@ -71,16 +71,11 @@ export default function Home() {
       setCurrentStep('extract');
       setStepStatus('extract', 'active');
 
-      const extractController = new AbortController();
-      const extractTimeout = setTimeout(() => extractController.abort(), 55000);
-
       const extractRes = await fetch('/api/process/extract', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ fileBase64, fileType, fileName }),
-        signal: extractController.signal,
       });
-      clearTimeout(extractTimeout);
 
       const extractData = await extractRes.json();
       if (!extractData.success) throw new Error(extractData.error);
@@ -94,37 +89,29 @@ export default function Home() {
 
       let finalExamData = extractData.data;
 
-      // Only run principal review if a real file was uploaded (skip for mock data)
-      if (fileBase64 && fileType) {
-        try {
-          const principalController = new AbortController();
-          const principalTimeout = setTimeout(() => principalController.abort(), 50000);
+      try {
+        const principalRes = await fetch('/api/process/principal-review', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sourceFileBase64: fileBase64,
+            sourceMimeType: fileType,
+            extractedData: extractData.data,
+          }),
+        });
 
-          const principalRes = await fetch('/api/process/principal-review', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              sourceFileBase64: fileBase64,
-              sourceMimeType: fileType,
-              extractedData: extractData.data,
-            }),
-            signal: principalController.signal,
-          });
-          clearTimeout(principalTimeout);
-
-          const principalData = await principalRes.json();
-          if (principalData.success) {
-            if (principalData.report) {
-              setPrincipalReport(principalData.report);
-            }
-            if (principalData.correctedData) {
-              finalExamData = principalData.correctedData;
-              setExtractedData(finalExamData);
-            }
+        const principalData = await principalRes.json();
+        if (principalData.success) {
+          if (principalData.report) {
+            setPrincipalReport(principalData.report);
           }
-        } catch (principalError) {
-          console.warn('[Pipeline] Principal review skipped:', principalError);
+          if (principalData.correctedData) {
+            finalExamData = principalData.correctedData;
+            setExtractedData(finalExamData); // Update with corrected data
+          }
         }
+      } catch (principalError) {
+        console.warn('[Pipeline] Principal review failed, using original:', principalError);
       }
 
       setStepStatus('principal-review', 'complete');
@@ -152,16 +139,11 @@ export default function Home() {
       setCurrentStep('qa');
       setStepStatus('qa', 'active');
 
-      const qaController = new AbortController();
-      const qaTimeout = setTimeout(() => qaController.abort(), 50000);
-
       const qaRes = await fetch('/api/process/qa', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ html: layoutData.html }),
-        signal: qaController.signal,
       });
-      clearTimeout(qaTimeout);
 
       const qaData = await qaRes.json();
       if (qaData.success && qaData.report) {
@@ -182,7 +164,7 @@ export default function Home() {
     } finally {
       setIsProcessing(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [files, styleConfig]);
 
   return (
